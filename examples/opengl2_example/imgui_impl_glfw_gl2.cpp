@@ -75,7 +75,14 @@ void ImGui_ImplGlfwGL2_RenderDrawData(ImDrawData* draw_data)
     GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
     GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box); 
+#ifndef __EMSCRIPTEN__
     glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT);
+#else
+    // Methods gl[Push/Pop]Attrib now not implemented in emscripten's library_gl.js
+    GLboolean imgui_GL_ENABLE_BIT_was_enabled = glIsEnabled(GL_ENABLE_BIT);
+    GLboolean imgui_GL_COLOR_BUFFER_BIT_was_enabled = glIsEnabled(GL_COLOR_BUFFER_BIT);
+    GLboolean imgui_GL_TRANSFORM_BIT_was_enabled = glIsEnabled(GL_TRANSFORM_BIT);
+#endif
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);
@@ -129,12 +136,30 @@ void ImGui_ImplGlfwGL2_RenderDrawData(ImDrawData* draw_data)
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
+#ifdef __EMSCRIPTEN__
+    if(last_texture)
+#endif
     glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
+#ifndef __EMSCRIPTEN__
     glPopAttrib();
+#else
+    if(imgui_GL_ENABLE_BIT_was_enabled)
+        glEnable(GL_ENABLE_BIT);
+    else
+        glDisable(GL_ENABLE_BIT);
+    if(imgui_GL_COLOR_BUFFER_BIT_was_enabled)
+        glEnable(GL_COLOR_BUFFER_BIT);
+    else
+        glDisable(GL_COLOR_BUFFER_BIT);
+    if(imgui_GL_TRANSFORM_BIT_was_enabled)
+        glEnable(GL_TRANSFORM_BIT);
+    else
+        glDisable(GL_TRANSFORM_BIT);
+#endif
     glPolygonMode(GL_FRONT, (GLenum)last_polygon_mode[0]); glPolygonMode(GL_BACK, (GLenum)last_polygon_mode[1]);
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
@@ -318,7 +343,9 @@ void ImGui_ImplGlfwGL2_NewFrame()
 
     // Setup inputs
     // (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
+#ifndef __EMSCRIPTEN__ // Bug in emscripten library_glfw.js: GLFW_FOCUSED allways 0
     if (glfwGetWindowAttrib(g_Window, GLFW_FOCUSED))
+#endif
     {
         // Set OS mouse position if requested (only used when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
         if (io.WantSetMousePos)
@@ -332,10 +359,12 @@ void ImGui_ImplGlfwGL2_NewFrame()
             io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
         }
     }
+#ifndef __EMSCRIPTEN__
     else
     {
         io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX);
     }
+#endif
 
     for (int i = 0; i < 3; i++)
     {
