@@ -1,4 +1,7 @@
-include_guard()
+if(__CURRENT_FILE_VAR__)
+  return()
+endif()
+set(__CURRENT_FILE_VAR__ TRUE)
 
 if(EXISTS "${ImGui_SRCDIR}" AND EXISTS "${ImGui_SRCDIR}/imgui.cpp")
     set(ImGui TRUE)

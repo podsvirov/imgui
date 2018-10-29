@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.5)
 
 get_filename_component(ImGui_SRCDIR "${CMAKE_CURRENT_LIST_DIR}" DIRECTORY)
 
